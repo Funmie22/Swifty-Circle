@@ -24,7 +24,17 @@ export function initializeApi(tg, apiUrl) {
   }
   // Debug: log what initData was captured to help diagnose auth timing issues
   console.debug('[api] initializeApi cachedInitData:', cachedInitData);
-  cachedApiBase = apiUrl || (import.meta.env.VITE_API_URL || 'http://localhost:5000');
+  const RENDER_URL = 'https://swifty-circle.onrender.com';
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl) {
+    cachedApiBase = apiUrl;
+  } else if (typeof window !== 'undefined' && window.navigator && window.navigator.onLine) {
+    // When the client is online, prefer the Render deployment URL
+    cachedApiBase = RENDER_URL || envUrl || 'http://localhost:5000';
+  } else {
+    // Offline or non-browser environments fall back to env or localhost
+    cachedApiBase = envUrl || 'http://localhost:5000';
+  }
 }
 
 export function getApiBase() {

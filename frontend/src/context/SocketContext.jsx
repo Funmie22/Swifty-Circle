@@ -15,7 +15,9 @@ export const SocketProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_WS_URL || 'http://localhost:5000';
+    const RENDER_HOST = 'https://swifty-circle.onrender.com';
+    const envWs = import.meta.env.VITE_WS_URL;
+    const socketUrl = envWs || (typeof window !== 'undefined' && window.navigator && window.navigator.onLine ? RENDER_HOST : 'http://localhost:5000');
     const socketInstance = io(socketUrl, {
       transports: ['websocket'],
       reconnectionAttempts: 5,

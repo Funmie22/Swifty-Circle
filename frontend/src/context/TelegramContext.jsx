@@ -79,10 +79,14 @@ export const TelegramProvider = ({ children }) => {
       }
       
       // Initialize API client with Telegram data
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-      // Use real Telegram WebApp when available, otherwise the synthetic one above
+      const RENDER_URL = 'https://swifty-circle.onrender.com';
+      const envApi = import.meta.env.VITE_API_URL;
       const effectiveTg = webApp || window.Telegram?.WebApp;
-      console.debug('[TelegramContext] initializing API with tg:', !!effectiveTg, 'hasInitDataUnsafe:', !!effectiveTg?.initDataUnsafe);
+      // When the browser is online prefer the Render deployment URL
+      const apiUrl = (typeof window !== 'undefined' && window.navigator && window.navigator.onLine)
+        ? RENDER_URL
+        : (envApi || 'http://localhost:5000');
+      console.debug('[TelegramContext] initializing API with tg:', !!effectiveTg, 'hasInitDataUnsafe:', !!effectiveTg?.initDataUnsafe, 'apiUrl:', apiUrl);
       initializeApi(effectiveTg, apiUrl);
 
       // Ensure we have a user before marking the app ready. Try to parse user from initData if not set.
