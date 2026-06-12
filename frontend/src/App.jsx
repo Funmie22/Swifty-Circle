@@ -109,7 +109,7 @@ import React, { useState, useEffect } from 'react';
 import { useSocket } from './context/SocketContext';
 import { useTelegram } from './context/TelegramContext';
 import { useApi } from './services/api';
-import Dashboard from './components/Dashboard';
+import Dashboard from './components/DashBoard';
 import ActiveSolo from './components/ActiveSolo';
 import MatchmakingQueue from './components/MatchmakingQueue';
 import ActiveMatch from './components/ActiveMatch';
