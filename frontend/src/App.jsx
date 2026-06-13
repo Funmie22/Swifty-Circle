@@ -283,10 +283,10 @@ export default function App() {
 
   {user && (
     <>
-      <span className="text-cyber-muted hidden sm:inline">|</span>
+      {/* <span className="text-cyber-muted hidden sm:inline">|</span>
       <span className="text-cyber-muted">
         OPERATOR: <span className="text-cyber-secondary font-bold">@{user.username || 'unknown'}</span>
-      </span>
+      </span> */}
       <span className="text-cyber-muted hidden sm:inline">|</span>
       <span className="text-cyber-muted">
         REP: <span className="text-yellow-400 font-bold">{user.rep}</span>
