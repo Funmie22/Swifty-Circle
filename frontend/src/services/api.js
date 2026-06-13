@@ -8,17 +8,45 @@ import { useTelegram } from '../context/TelegramContext';
 let cachedInitData = '';
 let cachedApiBase = '';
 
+function buildInitDataFromUser(user) {
+  if (!user) return '';
+  try {
+    return new URLSearchParams({ user: JSON.stringify(user) }).toString();
+  } catch (e) {
+    return '';
+  }
+}
+
+function refreshInitDataFromWindow() {
+  if (typeof window === 'undefined') return;
+
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    initializeApi(tg, cachedApiBase || undefined);
+    return;
+  }
+
+  try {
+    const storedUser = window.localStorage?.getItem('swifty-circle-dev-user');
+    if (storedUser) {
+      const user = JSON.parse(storedUser);
+      const initData = buildInitDataFromUser(user);
+      if (initData) {
+        cachedInitData = initData;
+      }
+    }
+  } catch (_) {
+    // Ignore storage decode errors.
+  }
+}
+
 // Initialize on app load
 export function initializeApi(tg, apiUrl) {
   // Prefer explicit initData string. If missing, construct from initDataUnsafe.user
   if (tg?.initData) {
     cachedInitData = tg.initData;
-  } else if (tg?.initDataUnsafe && tg.initDataUnsafe.user) {
-    try {
-      cachedInitData = new URLSearchParams({ user: JSON.stringify(tg.initDataUnsafe.user) }).toString();
-    } catch (e) {
-      cachedInitData = '';
-    }
+  } else if (tg?.initDataUnsafe?.user) {
+    cachedInitData = buildInitDataFromUser(tg.initDataUnsafe.user);
   } else {
     cachedInitData = '';
   }
@@ -26,14 +54,16 @@ export function initializeApi(tg, apiUrl) {
   console.debug('[api] initializeApi cachedInitData:', cachedInitData);
   const RENDER_URL = 'https://swifty-circle.onrender.com';
   const envUrl = import.meta.env.VITE_API_URL;
+  const isLocalHost = typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname);
+
   if (apiUrl) {
     cachedApiBase = apiUrl;
-  } else if (typeof window !== 'undefined' && window.navigator && window.navigator.onLine) {
-    // When the client is online, prefer the Render deployment URL
-    cachedApiBase = RENDER_URL || envUrl || 'http://localhost:5000';
+  } else if (envUrl) {
+    cachedApiBase = envUrl;
+  } else if (isLocalHost) {
+    cachedApiBase = 'http://localhost:5000';
   } else {
-    // Offline or non-browser environments fall back to env or localhost
-    cachedApiBase = envUrl || 'http://localhost:5000';
+    cachedApiBase = RENDER_URL;
   }
 }
 
@@ -71,6 +101,10 @@ export async function api(
   path,
   { method = 'POST', body = {} } = {}
 ) {
+  if (!cachedInitData) {
+    refreshInitDataFromWindow();
+  }
+
   const opts = {
     method,
     headers: { 'Content-Type': 'application/json' },

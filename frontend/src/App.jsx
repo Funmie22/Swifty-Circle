@@ -21,6 +21,60 @@ export default function App() {
   // Detect if we're in local dev (not in Telegram)
   const isLocalDev = !isWebApp && isReady;
 
+  const buildLocalProfile = (userId) => {
+    const profile = devProfiles[String(userId)] || {
+      id: String(userId),
+      name: `Local Player ${userId}`,
+      firstName: 'Local',
+      lastName: 'Player',
+      username: 'localplayer',
+      rep: 0,
+      tier: 'Initiate',
+      streak: 0,
+      volume: 0,
+      level: 1,
+      nextTier: { name: 'Apprentice', threshold: 100 },
+    };
+
+    return {
+      ...profile,
+      id: String(profile.id || userId),
+      name: profile.name || 'Local Detective',
+      firstName: profile.firstName || 'Local',
+      lastName: profile.lastName || 'Detective',
+      username: profile.username || 'localplayer',
+    };
+  };
+
+  const devProfiles = {
+    '1': {
+      id: '1',
+      name: 'Ada Lovelace',
+      firstName: 'Ada',
+      lastName: 'Lovelace',
+      username: 'ada',
+      rep: 1250,
+      tier: 'Apex Trader',
+      streak: 5,
+      volume: 15400,
+      level: 18,
+      nextTier: { name: 'The Oracle', threshold: 2500 },
+    },
+    '2': {
+      id: '2',
+      name: 'Satoshi Osun',
+      firstName: 'Satoshi',
+      lastName: 'Osun',
+      username: 'satoshi',
+      rep: 320,
+      tier: 'Apprentice',
+      streak: 2,
+      volume: 450,
+      level: 14,
+      nextTier: { name: 'Strategist', threshold: 500 },
+    },
+  };
+
   // Initialize user from Telegram data or manual selection
   useEffect(() => {
     if (!isReady) return;
@@ -37,8 +91,23 @@ export default function App() {
       .getProfile(userId)
       .then((data) => {
         if (isLocalDev) {
-          // Local dev: just use the fetched data
-          setUser(data);
+          const localProfile = buildLocalProfile(userId);
+
+          setUser({
+            ...localProfile,
+            ...data,
+            id: String(data.id || userId),
+            name: localProfile.name,
+            username: localProfile.username,
+            firstName: localProfile.firstName,
+            lastName: localProfile.lastName,
+            rep: data.rep ?? localProfile.rep,
+            tier: data.tier ?? localProfile.tier,
+            streak: data.streak ?? localProfile.streak,
+            volume: data.volume ?? localProfile.volume,
+            level: data.level ?? localProfile.level,
+            nextTier: data.nextTier ?? localProfile.nextTier,
+          });
         } else {
           // Telegram: merge with Telegram data
           setUser({
@@ -53,7 +122,9 @@ export default function App() {
       })
       .catch((err) => {
         console.error('Could not fetch user profile:', err);
-        if (!isLocalDev && telegramUser) {
+        if (isLocalDev) {
+          setUser(buildLocalProfile(userId));
+        } else if (telegramUser) {
           // Telegram: create profile from Telegram data
           setUser({
             id: String(telegramUser.id),
@@ -168,37 +239,13 @@ export default function App() {
         <div className="w-full">
           {currentView === 'DASHBOARD' && (
             <>
-              <Dashboard 
+              <DashBoard 
                 user={user} 
                 selectedPlayer={selectedPlayer}
                 onPlayerSelect={(id) => setSelectedPlayer(id)}
                 onSelectSolo={initializeSoloMode} 
                 onSelectPvP={() => setCurrentView('QUEUE')} 
               />
-              
-              {/* Dev Mode: User Switcher */}
-              {isLocalDev && (
-                <div className="mt-6 p-4 border border-cyber-secondary/40 bg-cyber-secondary/5 rounded text-center">
-                  <div className="text-[10px] text-cyber-muted mb-3 tracking-widest uppercase font-bold">
-                    DEV MODE • Switch User Profile
-                  </div>
-                  <div className="flex gap-3 justify-center">
-                    {['1', '2'].map((id) => (
-                      <button
-                        key={id}
-                        onClick={() => setSelectedPlayer(id)}
-                        className={`px-4 py-2 text-xs border rounded font-bold transition-all ${
-                          selectedPlayer === id
-                            ? 'bg-cyber-primary border-cyber-primary text-cyber-bg shadow-[0_0_8px_#00ff66]'
-                            : 'border-cyber-border text-cyber-secondary hover:border-cyber-secondary'
-                        }`}
-                      >
-                        {id === '1' ? 'Ada Lovelace' : 'Satoshi Osun'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </>
           )}
 

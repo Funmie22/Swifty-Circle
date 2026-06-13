@@ -16,32 +16,74 @@ export const TelegramProvider = ({ children }) => {
         // Check if Telegram Web App is available
         if (window.Telegram && window.Telegram.WebApp) {
           webApp = window.Telegram.WebApp;
+          const isLocalHost = typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname);
+          let parsedTelegramUser = null;
+          try {
+            const rawUser = new URLSearchParams(webApp?.initData || '').get('user');
+            parsedTelegramUser = rawUser ? JSON.parse(rawUser) : null;
+          } catch (_) {
+            parsedTelegramUser = null;
+          }
+          const hasRealTelegramAuth = Boolean(
+            webApp?.initData &&
+            /(^|&)hash=/.test(webApp.initData) &&
+            (webApp?.initDataUnsafe?.user?.id || parsedTelegramUser?.id)
+          );
+          const isActualTelegramWebApp = hasRealTelegramAuth && !isLocalHost;
           setTg(webApp);
-          setIsWebApp(true);
+          setIsWebApp(isActualTelegramWebApp);
 
           // Ready the web app
           webApp.ready();
 
-          // Extract user data
-          if (webApp.initDataUnsafe && webApp.initDataUnsafe.user) {
-            const userData = {
-              id: webApp.initDataUnsafe.user.id,
-              firstName: webApp.initDataUnsafe.user.first_name,
-              lastName: webApp.initDataUnsafe.user.last_name,
-              username: webApp.initDataUnsafe.user.username,
-              photoUrl: webApp.initDataUnsafe.user.photo_url,
-              isPremium: webApp.initDataUnsafe.user.is_premium,
-              languageCode: webApp.initDataUnsafe.user.language_code,
-            };
-            setUser(userData);
+          const fallbackUser = {
+            id: String(Math.floor(Math.random() * 10000)),
+            firstName: 'Dev',
+            lastName: 'User',
+            username: 'devuser',
+            photoUrl: null,
+            isPremium: false,
+            languageCode: 'en',
+          };
+
+          // Extract user data. If Telegram did not provide a real user payload,
+          // synthesize a deterministic dev user and fake initData so API calls
+          // keep working in localhost / browser-based testing.
+          const telegramUser = webApp.initDataUnsafe?.user || parsedTelegramUser;
+          const hasRealUser = Boolean(telegramUser && telegramUser.id && /(^|&)hash=/.test(webApp.initData || ''));
+          const userData = hasRealUser
+            ? {
+                id: telegramUser.id,
+                firstName: telegramUser.first_name,
+                lastName: telegramUser.last_name,
+                username: telegramUser.username,
+                photoUrl: telegramUser.photo_url,
+                isPremium: telegramUser.is_premium,
+                languageCode: telegramUser.language_code,
+              }
+            : fallbackUser;
+
+          setUser(userData);
+          window.localStorage?.setItem('swifty-circle-dev-user', JSON.stringify(userData));
+
+          if (!webApp.initData || !webApp.initData.includes('hash=')) {
+            webApp.initData = new URLSearchParams({ user: JSON.stringify(userData) }).toString();
           }
+          webApp.initDataUnsafe = {
+            ...(webApp.initDataUnsafe || {}),
+            user: userData,
+          };
 
           // Set theme color
-          webApp.setHeaderColor(webApp.themeParams.bg_color || '#000000');
+          try {
+            webApp.setHeaderColor(webApp.themeParams?.bg_color || '#000000');
+          } catch (_) {}
 
           // Set main button
-          webApp.MainButton.setText('Play');
-          webApp.MainButton.show();
+          try {
+            webApp.MainButton.setText('Play');
+            webApp.MainButton.show();
+          } catch (_) {}
         } else {
           // Fallback for non-Telegram environment (development)
           setIsWebApp(false);
@@ -55,6 +97,7 @@ export const TelegramProvider = ({ children }) => {
             languageCode: 'en',
           };
           setUser(fallbackUser);
+          window.localStorage?.setItem('swifty-circle-dev-user', JSON.stringify(fallbackUser));
           // Create a fake initData string containing the user JSON so the
           // backend's basic verifier can extract user info in dev.
           // We'll pass this object to initializeApi below. Also provide
@@ -81,11 +124,9 @@ export const TelegramProvider = ({ children }) => {
       // Initialize API client with Telegram data
       const RENDER_URL = 'https://swifty-circle.onrender.com';
       const envApi = import.meta.env.VITE_API_URL;
+      const isLocalHost = typeof window !== 'undefined' && /localhost|127\.0\.0\.1/.test(window.location.hostname);
       const effectiveTg = webApp || window.Telegram?.WebApp;
-      // When the browser is online prefer the Render deployment URL
-      const apiUrl = (typeof window !== 'undefined' && window.navigator && window.navigator.onLine)
-        ? RENDER_URL
-        : (envApi || 'http://localhost:5000');
+      const apiUrl = envApi || (isLocalHost ? 'http://localhost:5000' : RENDER_URL);
       console.debug('[TelegramContext] initializing API with tg:', !!effectiveTg, 'hasInitDataUnsafe:', !!effectiveTg?.initDataUnsafe, 'apiUrl:', apiUrl);
       initializeApi(effectiveTg, apiUrl);
 

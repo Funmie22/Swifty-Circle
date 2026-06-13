@@ -165,6 +165,9 @@ export default function MatchmakingQueue({ user, onMatchFound, onCancel }) {
   const [inQueue, setInQueue] = useState(false);
   const [queueError, setQueueError] = useState('');
 
+  const displayName = user?.name || user?.username || user?.firstName || 'Anonymous Node';
+  const isLocalProfile = ['1', '2'].includes(String(user?.id)) || /^(ada|satoshi)$/i.test(String(user?.username || ''));
+
   const leaveQueue = () => {
     if (!socket || !inQueue) return;
     socket.emit('leave_queue', { userId: user?.id });
@@ -226,13 +229,35 @@ export default function MatchmakingQueue({ user, onMatchFound, onCancel }) {
     setQueueError('');
     setInQueue(true);
 
-    // Fetch authoritative profile to avoid using TelegramContext fallback user
-    let detectiveName = user.username || user.name;
+    const fallbackName = user?.name || user?.firstName || user?.username || 'Unknown Detective';
+    let detectiveName = fallbackName;
+
+    if (isLocalProfile) {
+      detectiveName = fallbackName;
+      console.log('[client] using stable local profile name for queue join', { detectiveName });
+      socket.emit('join_queue', {
+        userId: user.id,
+        detectiveName,
+        stake: Number(stake),
+        preferredCaseId: preferredCaseId || undefined,
+      });
+      return;
+    }
+
+    const isGenericName = (value) =>
+      !value || /^(devuser|dev user|user\s*\d+)$/i.test(String(value).trim());
+
     try {
       const profile = await apiUser.getProfile(String(user.id));
-      detectiveName = profile.username || profile.name || detectiveName;
+      const remoteName = isGenericName(profile?.name) ? '' : profile?.name;
+      const remoteUsername = isGenericName(profile?.username) ? '' : profile?.username;
+      detectiveName = remoteName || remoteUsername || profile?.firstName || fallbackName;
     } catch (err) {
       console.debug('[client] could not fetch authoritative profile before join_queue:', err);
+    }
+
+    if (isGenericName(detectiveName)) {
+      detectiveName = fallbackName;
     }
 
     console.log('[client] emitting join_queue', { userId: user.id, detectiveName, stake: Number(stake), preferredCaseId });
@@ -264,7 +289,7 @@ export default function MatchmakingQueue({ user, onMatchFound, onCancel }) {
         <div className="bg-black/40 border border-zinc-900 rounded-xl p-4 mb-6 space-y-2 text-xs text-left max-w-xs mx-auto font-mono">
           <div className="flex justify-between items-center">
             <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Identity Asset:</span> 
-            <span className="text-zinc-200 font-medium">{user?.username || user?.name || 'Anonymous Node'}</span>
+            <span className="text-zinc-200 font-medium">{displayName}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-zinc-500 font-bold uppercase tracking-wider text-[9px]">Allocated Stake:</span> 
