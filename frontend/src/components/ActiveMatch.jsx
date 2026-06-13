@@ -35,7 +35,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
       setGameOverState(data);
     });
 
-    // Match start will deliver the caseData when both players are ready
     socket.on('match_start', (data) => {
       if (data.matchId === matchId) {
         setCaseData(data.caseData);
@@ -45,7 +44,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
 
     socket.on('player_ready_update', (data) => {
       if (data.matchId === matchId) {
-        // mark opponent ready
         if (data.socketId !== socket.id) setOpponentReady(true);
       }
     });
@@ -57,7 +55,7 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
       socket.off('match_start');
       socket.off('player_ready_update');
     };
-  }, [socket]);
+  }, [socket, matchId]);
 
   const submitSolution = (e) => {
     e.preventDefault();
@@ -75,8 +73,42 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
     socket.emit('player_ready', { matchId });
   };
 
+  // --- RENDERING METHOD: GAME OVER TERMINAL MATRIX ---
   if (gameOverState) {
     const isWinner = gameOverState.result === 'WON';
+    
+    // Dynamic Pre-filled Copy Factory for Ecosystem Ingestion
+    const getShareLinks = () => {
+      const opponentDisplay = opponent || "a rival node";
+      const bountyInfo = isWinner ? `Secured +${gameOverState.looted} STAKE` : `Lost a duel over ${pot} POOL`;
+      
+      const twitterTemplate = encodeURIComponent(
+        isWinner
+          ? `💥 Just dismantled ${opponentDisplay} in a SwiftyCircle forensic duel!\n\n` +
+            `🏆 Status: Raid Victorious\n` +
+            `👾 ${bountyInfo} directly inside the terminal application.\n\n` +
+            `Think your exploit tracing routines can beat me? Challenge my node here: t.me/SwiftyXCircle_bot/play #SwiftyEx #Hackfest2026`
+          : `💀 System Breach: Overridden by ${opponentDisplay} in SwiftyCircle!\n\n` +
+            `🛠️ Rebuilding my forensic tracing modules immediately.\n\n` +
+            `Enter the crypto sandbox terminal and run your own trace array: t.me/SwiftyXCircle_bot/play #SwiftyEx`
+      );
+
+      const telegramTemplate = encodeURIComponent(
+        `⚡️ SWIFTYCIRCLE TERMINAL RECEIPT ⚡️\n\n` +
+        `🎯 Status Matrix: ${isWinner ? '🟢 OPERATION SECURED' : '🔴 TRACE INTERCEPTED'}\n` +
+        `👤 Target Competitor: ${opponentDisplay}\n` +
+        `💎 Bounty Impact: ${bountyInfo}\n\n` +
+        `Initiating new cryptographic matching queues. Launch the link below to enter the arena 👇`
+      );
+
+      return {
+        twitter: `https://twitter.com/intent/tweet?text=${twitterTemplate}`,
+        telegram: `https://t.me/share/url?url=t.me/SwiftyXCircle_bot/play&text=${telegramTemplate}`
+      };
+    };
+
+    const shareUrls = getShareLinks();
+
     return (
       <div className="max-w-md mx-auto bg-zinc-900/40 border border-zinc-800/80 p-6 text-center rounded-2xl shadow-2xl relative overflow-hidden animate-scaleIn mt-10 font-mono">
         <div className={`absolute top-0 left-0 right-0 h-1 ${isWinner ? 'bg-emerald-500' : 'bg-red-500'}`} />
@@ -87,7 +119,7 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
           Raid {gameOverState.result}
         </h2>
         <p className="text-xs text-zinc-400 my-4 leading-relaxed">
-          {gameOverState.behaviorMessage}
+          {gameOverState.behaviorMessage || (isWinner ? "Target node successfully cleared from the network buffer." : "Your decryption framework was compromised by your opponent.")}
         </p>
         <div className="bg-black/40 border border-zinc-800/60 py-3 px-4 rounded-xl my-4 flex justify-between text-xs">
           <span className="text-zinc-500 uppercase tracking-wider text-[10px] font-bold">Loot Pool Yielded:</span>
@@ -95,6 +127,30 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
             {isWinner ? `+${gameOverState.looted} STAKE` : '0 STAKE'}
           </span>
         </div>
+
+        {/* BRAG CHANNELS MARKETING MATRIX */}
+        <div className="mb-4 border border-zinc-800/60 bg-black/20 p-3 rounded-xl flex flex-col gap-2">
+          <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold block text-left">Broadcast Operational Record</span>
+          <div className="flex gap-2.5">
+            <a 
+              href={shareUrls.twitter}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-2 bg-black hover:bg-neutral-900 text-white border border-neutral-800 text-[10px] font-bold tracking-wider rounded-lg uppercase transition-all flex items-center justify-center"
+            >
+              𝕏 Share on X
+            </a>
+            <a 
+              href={shareUrls.telegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-sky-400 text-[10px] font-bold tracking-wider rounded-lg uppercase transition-all flex items-center justify-center shadow-[0_0_8px_rgba(56,189,248,0.05)]"
+            >
+              ✈️ Send to Group
+            </a>
+          </div>
+        </div>
+
         <button 
           onClick={onMatchEnd}
           className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-200 text-xs font-bold rounded-xl transition-all tracking-wider uppercase"
@@ -139,6 +195,7 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
       </div>
     );
   }
+
   // --- ACTIVE GAME INTERFACE ---
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start font-mono text-zinc-300 animate-fadeIn">
@@ -268,7 +325,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
               </div>
             )}
 
-            {/* Dynamic Hex Data Stream Panel */}
             {caseData?.payload && (
               <div className="text-xs">
                 <label className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block mb-1.5">Hex Stream Buffer</label>
@@ -296,7 +352,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
               </div>
             )}
 
-            {/* System Output Logs Pipeline */}
             {caseData?.terminalLogs && (
               <div className="rounded-xl overflow-hidden border border-zinc-900">
                 <TerminalOutput logs={caseData.terminalLogs} />
@@ -305,7 +360,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
           </div>
         </div>
 
-        {/* Action Form Override Key Injection */}
         <form onSubmit={submitSolution} className="pt-4 border-t border-zinc-900">
           <div className="flex flex-col sm:flex-row gap-3">
             <input 
@@ -325,10 +379,9 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
         </form>
       </div>
 
-      {/* Right Area: Auxiliary Intelligence Intelligence Sidebar */}
+      {/* Right Area: Auxiliary Intelligence Sidebar */}
       <div className="lg:col-span-4 space-y-4">
         
-        {/* Real-time Validation Engine Notifications */}
         {feedback && (
           <div className={`p-4 border rounded-xl text-xs flex items-start gap-3 animate-slideIn ${
             feedback.correct 
@@ -345,7 +398,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
           </div>
         )}
 
-        {/* Signal Clue Panel */}
         {caseData?.clue && (
           <div className="border border-zinc-800/40 bg-zinc-900/10 p-4 rounded-xl text-xs space-y-1.5">
             <label className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest block">Intercepted Signal Clue</label>
@@ -371,7 +423,6 @@ export default function ActiveMatch({ matchPayload, onMatchEnd }) {
           </div>
         )}
 
-        {/* Decryption Sub-Engine Utility Module */}
         <div className="border border-zinc-800/40 bg-zinc-900/10 p-4 rounded-xl">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 text-[10px] font-bold text-white tracking-widest uppercase min-w-0">
