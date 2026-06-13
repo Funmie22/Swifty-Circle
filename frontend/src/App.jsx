@@ -180,7 +180,7 @@ export default function App() {
         </div>
 
         {/* Local Dev: Show user selector */}
-        {isLocalDev && (
+        {/* {isLocalDev && (
           <div className="flex gap-4">
             {['1', '2'].map((id) => (
               <button
@@ -196,7 +196,7 @@ export default function App() {
               </button>
             ))}
           </div>
-        )}
+        )} */}
       </div>
     );
   }
