@@ -270,10 +270,30 @@ export default function App() {
         </div>
       </main>
 
-      {/* Persistent Terminal Footer info */}
-      <footer className="border-t border-cyber-border bg-cyber-card/40 py-2.5 px-4 text-center text-[10px] text-cyber-muted font-mono tracking-widest uppercase">
-        SYSTEM STATUS // MEMORY BLOCK ALLOCATION: STABLE // CLUSTER SYNC VERIFIED
-      </footer>
+<footer className="border-t border-cyber-border bg-cyber-card/40 py-2.5 px-4 text-center font-mono text-[10px] tracking-widest uppercase flex flex-wrap justify-center items-center gap-x-6 gap-y-1">
+  <span className="text-cyber-muted">
+    SYS // STATUS: <span className={connected ? "text-cyber-primary font-bold" : "text-cyber-alert font-bold"}>{connected ? "ONLINE" : "DISCONNECTED"}</span>
+  </span>
+  
+  <span className="text-cyber-muted hidden sm:inline">|</span>
+  
+  <span className="text-cyber-muted">
+    STAGE: <span className="text-white font-bold">{currentView}</span>
+  </span>
+
+  {user && (
+    <>
+      <span className="text-cyber-muted hidden sm:inline">|</span>
+      <span className="text-cyber-muted">
+        OPERATOR: <span className="text-cyber-secondary font-bold">@{user.username || 'unknown'}</span>
+      </span>
+      <span className="text-cyber-muted hidden sm:inline">|</span>
+      <span className="text-cyber-muted">
+        REP: <span className="text-yellow-400 font-bold">{user.rep}</span>
+      </span>
+    </>
+  )}
+</footer>      
     </div>
   );
 }
