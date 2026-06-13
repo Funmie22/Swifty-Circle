@@ -176,7 +176,7 @@ export default function App() {
     return (
       <div className="min-h-screen bg-cyber-bg flex flex-col items-center justify-center gap-6">
         <div className="text-cyber-primary animate-pulse text-sm font-mono tracking-widest uppercase">
-          {isLocalDev ? 'SELECT USER PROFILE' : 'INITIALIZING TELEGRAM...'}
+          {isLocalDev ? 'Loading...' : 'INITIALIZING TELEGRAM...'}
         </div>
 
         {/* Local Dev: Show user selector */}
